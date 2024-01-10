@@ -25,7 +25,7 @@ public class vision extends SubsystemBase {
     NetworkTableEntry ta2 = table.getEntry("ta1");
     NetworkTableEntry tv2 = table.getEntry("tv1");
 
-    // repeat?
+    // repeat or is there a more efficient way?
 
     private int activePipeline = 0; // Set the active pipeline
     setPipeline(activePipeline); // Set the default pipeline number
@@ -42,8 +42,10 @@ public class vision extends SubsystemBase {
     public double percentArea () { return table.getEntry("ta" + activePipeline).getDouble(0); }
     public boolean isTarget () { return table.getEntry("tv" + activePipeline).getDouble(0) == 1.0; }
     
-    // idk whats going on below
-    public boolean weGreen () { return horizontalOffset() < 5 && horizontalOffset() > -5 && isTarget() == 1; } // if horizontal offset is within a range and if there is a valid target
-    public void periodic () { SmartDashboard.putBoolean("Is target ", weGreen()); } // updates smartdashboard
+    public boolean weGreen () { return horizontalOffset() < 5 && horizontalOffset() > -5 && isTarget() == 1; } // if horizontal offset is within a range and if there is a valid target idk what this is
+    
+    public void periodic () {
+        SmartDashboard.putBoolean("Is target ", weGreen());
+    }
 }
 
