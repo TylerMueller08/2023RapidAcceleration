@@ -1,89 +1,49 @@
 package frc.robot.subsystems;
 
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableEntry;
 import edu.wpi.first.networktables.NetworkTableInstance;
-import frc.robot.subsystems.Swerve;
-import frc.robot.subsystems.arm;
+//import frc.robot.subsystems.Swerve;
+//import frc.robot.subsystems.arm;
 
 public class vision extends SubsystemBase {
     
-NetworkTable table = NetworkTableInstance.getDefault().getTable("limelight");
-NetworkTableEntry tx = table.getEntry("tx");
-NetworkTableEntry ty = table.getEntry("ty");
-NetworkTableEntry ta = table.getEntry("ta");
-NetworkTableEntry tv = table.getEntry("tv");
+    NetworkTable table = NetworkTableInstance.getDefault().getTable("limelight"); // table used to communicate with the limelight camera
 
-//arm m_Arm = new arm();
+    // Setup pipeline 0 for apriltag id 1
+    NetworkTableEntry tx1 = table.getEntry("tx0"); // Horizontal offset from crosshair to target (-27 degrees to 27 degrees)
+    NetworkTableEntry ty1 = table.getEntry("ty0"); // Vertical offset from crosshair to target (-20.5 degrees to 20.5 degrees)
+    NetworkTableEntry ta1 = table.getEntry("ta0"); // Target area (0% of image to 100% of image)
+    NetworkTableEntry tv1 = table.getEntry("tv0"); // Whether the limelight has any valid targets (0 or 1)
 
-//final Translation2d m_backwards = new Translation2d(.1016, 0);
+    // set pipeline 1 for aptril tag id 2
+    NetworkTableEntry tx2 = table.getEntry("tx1");
+    NetworkTableEntry ty2 = table.getEntry("ty1");
+    NetworkTableEntry ta2 = table.getEntry("ta1");
+    NetworkTableEntry tv2 = table.getEntry("tv1");
 
-//private Swerve m_Swerve;
-//NetworkTableInstance.getDefault().getTable("limelight").getEntry("ledMode").setNumber(1);
+    // repeat?
 
-//lightOff = table.getEntry("ledMode").setNumber(1);
-
-    public vision() {
-
-       
-        //m_Swerve = new Swerve();
-
-    }
-    public double horizontalOffset () {
-
-
-        double x = tx.getDouble(0);
-
-        System.out.println(x);
-
-        return x;
-
-    }
-    public double verticalOffset () {
-
-        double y = ty.getDouble(0);
-
-        return y;
-
-    }
-    public double percentArea () {
-
-        double a = ta.getDouble(0);
-
-        return a;
-
-    }
-    public double isTarget () {
-
-        double v = tv.getDouble(0);
-
-        return v;
-
-    }
-    public boolean weGreen (){
-
-        boolean weGreen = false;
-
-        if (horizontalOffset() < 5 && horizontalOffset() > -5 && isTarget() == 1){
-            weGreen = true;
-        }
-        return weGreen;
+    private int activePipeline = 0; // Set the active pipeline
+    setPipeline(activePipeline); // Set the default pipeline number
+    
+    public void setPipeline(int pipeline) {
+        // Actually set the active pipeline
+        table.getEntry("pipeline").setNumber(pipeline);
+        activePipeline = pipeline;
     }
 
-    public void armAutoUp(){
-
-        if (weGreen() == true){
-        }
-
-    }
-
-    public void periodic (){
-
-        SmartDashboard.putBoolean("Is target ", weGreen());
-
-    }
+    // returns the value of each for the currently active pipeline
+    public double horizontalOffset () { return table.getEntry("tx" + activePipeline).getDouble(0); }
+    public double verticalOffset () { return table.getEntry("ty" + activePipeline).getDouble(0); }
+    public double percentArea () { return table.getEntry("ta" + activePipeline).getDouble(0); }
+    public boolean isTarget () { return table.getEntry("tv" + activePipeline).getDouble(0) == 1.0; }
+    
+    // idk whats going on below
+    public boolean weGreen () { return horizontalOffset() < 5 && horizontalOffset() > -5 && isTarget() == 1; } // if horizontal offset is within a range and if there is a valid target
+    public void periodic () { SmartDashboard.putBoolean("Is target ", weGreen()); } // updates smartdashboard
 }
 
