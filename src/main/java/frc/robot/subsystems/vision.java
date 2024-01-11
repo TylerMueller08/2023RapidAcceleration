@@ -1,7 +1,6 @@
 package frc.robot.subsystems;
 
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-import edu.wpi.first.math.geometry.Translation2d;
+//import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableEntry;
@@ -11,31 +10,54 @@ import edu.wpi.first.networktables.NetworkTableInstance;
 
 public class vision extends SubsystemBase {
     
-    NetworkTable table = NetworkTableInstance.getDefault().getTable("limelight"); // table used to communicate with the limelight camera
+    private NetworkTable table;
 
-    // Setup a pipeline
-    NetworkTableEntry tx = table.getEntry("tx"); // Horizontal offset from crosshair to target (-27 degrees to 27 degrees)
-    NetworkTableEntry ty = table.getEntry("ty"); // Vertical offset from crosshair to target (-20.5 degrees to 20.5 degrees)
-    NetworkTableEntry ta = table.getEntry("ta"); // Target area (0% of image to 100% of image)
-    NetworkTableEntry tv = table.getEntry("tv"); // Whether the limelight has any valid targets (0 or 1)
+    public void armAutoUp() {}
 
-    private int activePipeline = 0; // Set the active pipeline
-    setPipeline(activePipeline); // Set the default pipeline number
+    public vision() {
+        // NetworkTable used to communicate with the LimeLight Camera
+        table = NetworkTableInstance.getDefault().getTable("limelight"); 
+    }
     
-    public void setPipeline(int pipeline) {
-        // Actually set the active pipeline
-        table.getEntry("pipeline").setNumber(pipeline);
-        activePipeline = pipeline;
+    // Function run periodically every 20ms
+    public void periodic() {
+
+        // Select pipeline to enable
+        int selectedPipeline = 0;
+        table.getEntry("pipeline").setNumber(selectedPipeline);
+
+        // Force on led lights
+        table.getEntry("ledMode").setNumber(3);
+
+        // Retrieve AprilTag data from selected pipeline
+        NetworkTableEntry tx = table.getEntry("tx"); // Horizontal offset from crosshair to target (-27 degrees to 27 degrees)
+        NetworkTableEntry ty = table.getEntry("ty"); // Vertical offset from crosshair to target (-20.5 degrees to 20.5 degrees)
+        NetworkTableEntry ta = table.getEntry("ta"); // Target area (0% of image to 100% of image)
+
+        // Get the target's (AprilTag) ID from the pipeline
+        NetworkTableEntry targetAprilTagID = table.getEntry("tid");
+        int targetID = (int) targetAprilTagID.getDouble(0);
+
+        // Periodically read the data from the pipeline
+        double horizontalOffset = tx.getDouble(0);
+        double verticalOffset = ty.getDouble(0);
+        double targetArea = ta.getDouble(0);
+
+
+        if (targetID == selectedPipeline && selectedPipeline != 0) {
+            System.out.println("Current detecting AprilTag ID #" + targetID + " on pipeline #" + selectedPipeline);
+            updateSmartDashboard(horizontalOffset, verticalOffset, targetArea);
+        }
     }
 
-    // returns the value of the pipeline
-    double horizontalOffset = tx.getDouble(0);
-    double verticalOffset = ty.getDouble(0);
-    double percentArea = ta.getDouble(0);
+    private void updateSmartDashboard(double horizontalOffset, double verticalOffset, double targetArea) {    
+        //SmartDashboard.putNumber("Horizontal Offset", horizontalOffset);
+        //SmartDashboard.putNumber("Vertical Offset", verticalOffset);
+        //SmartDashboard.putNumber("Target Area", targetArea);
 
-    
-    public void periodic () {
-        SmartDashboard.putBoolean();
+        System.out.println("Horizontal Offset: " + horizontalOffset);
+        System.out.println("Vertical Offset: " + verticalOffset);
+        System.out.println("Target Area: " + targetArea);
     }
 }
 
