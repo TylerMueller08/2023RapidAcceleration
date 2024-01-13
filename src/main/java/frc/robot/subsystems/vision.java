@@ -1,6 +1,6 @@
 package frc.robot.subsystems;
 
-//import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableEntry;
@@ -11,6 +11,9 @@ import edu.wpi.first.networktables.NetworkTableInstance;
 public class vision extends SubsystemBase {
     
     private NetworkTable table;
+    private double horizontalOffset0 = 0;
+    private double verticalOffset0 = 0;
+    private boolean aprilTag1Detected = false;
 
     public void armAutoUp() {}
 
@@ -22,42 +25,47 @@ public class vision extends SubsystemBase {
     // Function run periodically every 20ms
     public void periodic() {
 
-        // Select pipeline to enable
-        int selectedPipeline = 0;
-        table.getEntry("pipeline").setNumber(selectedPipeline);
+        int selectedPipelines[] = {0, 1};
 
-        // Force on led lights
-        table.getEntry("ledMode").setNumber(3);
+        for (int pipeline : selectedPipelines) {
+            table.getEntry("pipeline").setNumber(pipeline);
 
-        // Retrieve AprilTag data from selected pipeline
-        NetworkTableEntry tx = table.getEntry("tx"); // Horizontal offset from crosshair to target (-27 degrees to 27 degrees)
-        NetworkTableEntry ty = table.getEntry("ty"); // Vertical offset from crosshair to target (-20.5 degrees to 20.5 degrees)
-        NetworkTableEntry ta = table.getEntry("ta"); // Target area (0% of image to 100% of image)
+            // Retrieve AprilTag data from selected pipeline
+            NetworkTableEntry tx = table.getEntry("tx"); // Horizontal offset from crosshair to target (-27 degrees to 27 degrees)
+            NetworkTableEntry ty = table.getEntry("ty"); // Vertical offset from crosshair to target (-20.5 degrees to 20.5 degrees)
+            NetworkTableEntry tid = table.getEntry("tid");
 
-        // Get the target's (AprilTag) ID from the pipeline
-        NetworkTableEntry targetAprilTagID = table.getEntry("tid");
-        int targetID = (int) targetAprilTagID.getDouble(0);
+            // Periodically read the data from the pipeline
+            double horizontalOffset = tx.getDouble(0);
+            double verticalOffset = ty.getDouble(0);
+            int targetID = (int) tid.getDouble(0);
 
-        // Periodically read the data from the pipeline
-        double horizontalOffset = tx.getDouble(0);
-        double verticalOffset = ty.getDouble(0);
-        double targetArea = ta.getDouble(0);
+            updateSmartDashboard(horizontalOffset, verticalOffset, pipeline, targetID);
 
+            if (pipeline == 0) {
+                horizontalOffset0 = horizontalOffset;
+                verticalOffset0 = verticalOffset;
 
-        if (targetID == selectedPipeline && selectedPipeline != 0) {
-            System.out.println("Current detecting AprilTag ID #" + targetID + " on pipeline #" + selectedPipeline);
-            updateSmartDashboard(horizontalOffset, verticalOffset, targetArea);
+                if (targetID == 1) {
+                    aprilTag1Detected = true;
+                }
+            } else if (pipeline == 1 && targetID == 2 && aprilTag1Detected) {
+                // Both pipelines (0 & 1) detect their respective AprilTags (1 & 2)
+                double horizontalDistance = horizontalOffset - horizontalOffset;
+                double verticalDistance = verticalOffset - verticalOffset;
+
+                // Calculate for the hypotenus (closest distance) of both tags
+                double distanceBetweenTags = Math.sqrt(Math.pow(horizontalDistance, 2) + Math.pow(verticalDistance, 2));
+                SmartDashboard.putNumber("Distance Between AprilTags", distanceBetweenTags);
+            }
         }
     }
 
-    private void updateSmartDashboard(double horizontalOffset, double verticalOffset, double targetArea) {    
-        //SmartDashboard.putNumber("Horizontal Offset", horizontalOffset);
-        //SmartDashboard.putNumber("Vertical Offset", verticalOffset);
-        //SmartDashboard.putNumber("Target Area", targetArea);
-
-        System.out.println("Horizontal Offset: " + horizontalOffset);
-        System.out.println("Vertical Offset: " + verticalOffset);
-        System.out.println("Target Area: " + targetArea);
+    private void updateSmartDashboard(double horizontalOffset, double verticalOffset, int pipeline, int targetID) {   
+        String prefix = "Pipeline #" + pipeline + "/AprilTag #" + targetID + " - ";
+        
+        SmartDashboard.putNumber(prefix + "Horizontal Offset", horizontalOffset);
+        SmartDashboard.putNumber(prefix + "Vertical Offset", verticalOffset);
     }
 }
 
