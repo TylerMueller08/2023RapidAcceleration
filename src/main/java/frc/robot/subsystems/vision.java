@@ -5,67 +5,62 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableEntry;
 import edu.wpi.first.networktables.NetworkTableInstance;
-//import frc.robot.subsystems.Swerve;
-//import frc.robot.subsystems.arm;
 
 public class vision extends SubsystemBase {
     
     private NetworkTable table;
-    private double horizontalOffset0 = 0;
-    private double verticalOffset0 = 0;
-    private boolean aprilTag1Detected = false;
+    // private int currentPipeline = 0;
 
     public void armAutoUp() {}
 
     public vision() {
-        // NetworkTable used to communicate with the LimeLight Camera
         table = NetworkTableInstance.getDefault().getTable("limelight"); 
     }
     
-    // Function run periodically every 20ms
     public void periodic() {
-
         int selectedPipelines[] = {0, 1};
 
         for (int pipeline : selectedPipelines) {
             table.getEntry("pipeline").setNumber(pipeline);
 
-            // Retrieve AprilTag data from selected pipeline
-            NetworkTableEntry tx = table.getEntry("tx"); // Horizontal offset from crosshair to target (-27 degrees to 27 degrees)
-            NetworkTableEntry ty = table.getEntry("ty"); // Vertical offset from crosshair to target (-20.5 degrees to 20.5 degrees)
-            NetworkTableEntry tid = table.getEntry("tid");
+            // Allow for limelight to switch between pipelines before getting data
+            // Wait for camera to switch before updated data becomes available
+            try {
+                Thread.sleep(50);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
 
-            // Periodically read the data from the pipeline
+            NetworkTableEntry tx = table.getEntry("tx");
+            NetworkTableEntry ty = table.getEntry("ty");
+
             double horizontalOffset = tx.getDouble(0);
             double verticalOffset = ty.getDouble(0);
-            int targetID = (int) tid.getDouble(0);
-
-            updateSmartDashboard(horizontalOffset, verticalOffset, pipeline, targetID);
 
             if (pipeline == 0) {
-                horizontalOffset0 = horizontalOffset;
-                verticalOffset0 = verticalOffset;
-
-                if (targetID == 1) {
-                    aprilTag1Detected = true;
-                }
-            } else if (pipeline == 1 && targetID == 2 && aprilTag1Detected) {
-                // Both pipelines (0 & 1) detect their respective AprilTags (1 & 2)
-                double horizontalDistance = horizontalOffset - horizontalOffset;
-                double verticalDistance = verticalOffset - verticalOffset;
-
-                // Calculate for the hypotenus (closest distance) of both tags
-                double distanceBetweenTags = Math.sqrt(Math.pow(horizontalDistance, 2) + Math.pow(verticalDistance, 2));
-                SmartDashboard.putNumber("Distance Between AprilTags", distanceBetweenTags);
+                SmartDashboard.putNumber("P0 - HO", horizontalOffset);
+                SmartDashboard.putNumber("P0 - VO", verticalOffset);
+            } else if (pipeline == 1) {
+                SmartDashboard.putNumber("P1 - HO", horizontalOffset);
+                SmartDashboard.putNumber("P1 - VO", verticalOffset);
             }
         }
-    }
 
-    private void updateSmartDashboard(double horizontalOffset, double verticalOffset, int pipeline, int targetID) {   
-        String prefix = "Pipeline #" + pipeline + "/AprilTag #" + targetID + " - ";
-        
-        SmartDashboard.putNumber(prefix + "Horizontal Offset", horizontalOffset);
-        SmartDashboard.putNumber(prefix + "Vertical Offset", verticalOffset);
+        // IF the previously mentioned code doesn't work with delaying, try this
+        // Switches pipelines back and forth after each periodic call
+        // table.getEntry("pipeline").setNumber(currentPipeline);
+
+        // NetworkTableEntry tx = table.getEntry("tx");
+        // NetworkTableEntry ty = table.getEntry("ty");
+
+        // double horizontalOffset = tx.getDouble(0);
+        // double verticalOffset = ty.getDouble(0);
+
+        // SmartDashboard.putNumber(currentPipeline + "-HO", horizontalOffset);
+        // SmartDashboard.putNumber(currentPipeline + "-VO", verticalOffset);
+
+        // // Switch to next pipeline for next time periodic() is called
+        // currentPipeline = (currentPipeline + 1) % 2;
     }
 }
 
