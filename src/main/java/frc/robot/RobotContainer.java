@@ -35,7 +35,7 @@ public class RobotContainer {
   // Robot subsystems
   private Swerve m_swerve = new Swerve();
   public arm m_arm = new arm();
-  private vision m_Vision = new vision();
+  private vision m_Vision = new vision(m_swerve);
 
   // Xbox controllers
   public static final CommandXboxController driver =
