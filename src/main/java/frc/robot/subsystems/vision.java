@@ -5,62 +5,51 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableEntry;
 import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.math.geometry.Translation2d;
+import frc.robot.subsystems.Swerve;
 
 public class vision extends SubsystemBase {
     
-    private NetworkTable table;
-    // private int currentPipeline = 0;
+    private final NetworkTable table;
+    private final Swerve swerveSubsystem;
 
     public void armAutoUp() {}
 
-    public vision() {
-        table = NetworkTableInstance.getDefault().getTable("limelight"); 
+    public vision(Swerve swerveSubsystem) {
+        table = NetworkTableInstance.getDefault().getTable("limelight");
+        this.swerveSubsystem = swerveSubsystem;
+    }
+
+    public void alignWithAprilTag() {
+        // Get vertical offset of apriltag from crosshair (camera is rotated 90 degrees so horizontal and vertical offset are swapped)
+        // NetworkTableEntry ty = table.getEntry("ty");
+        // double verticalOffset = ty.getDouble(0);
+        // Translation2 translation = new Translation2d(0.0, verticalOffset);
+        
+        Translation2d translation = new Translation2d(0.3, 0.0); // Move 1 foot forward (units in meters)
+        double rotation = 0.0; // No rotation
+        boolean fieldRelative = true; // Move relative to the field
+        boolean isOpenLoop = false; // Closed-loop control
+
+        swerveSubsystem.drive(translation, rotation, fieldRelative, isOpenLoop);
     }
     
     public void periodic() {
-        int selectedPipelines[] = {0, 1};
+        int selectedPipeline = 2;
 
-        for (int pipeline : selectedPipelines) {
-            table.getEntry("pipeline").setNumber(pipeline);
+        table.getEntry("pipeline").setNumber(selectedPipeline);
 
-            // Allow for limelight to switch between pipelines before getting data
-            // Wait for camera to switch before updated data becomes available
-            try {
-                Thread.sleep(50);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
 
-            NetworkTableEntry tx = table.getEntry("tx");
-            NetworkTableEntry ty = table.getEntry("ty");
+        NetworkTableEntry tx = table.getEntry("tx");
+        NetworkTableEntry ty = table.getEntry("ty");
 
-            double horizontalOffset = tx.getDouble(0);
-            double verticalOffset = ty.getDouble(0);
+        double horizontalOffset = tx.getDouble(0);
+        double verticalOffset = ty.getDouble(0);
 
-            if (pipeline == 0) {
-                SmartDashboard.putNumber("P0 - HO", horizontalOffset);
-                SmartDashboard.putNumber("P0 - VO", verticalOffset);
-            } else if (pipeline == 1) {
-                SmartDashboard.putNumber("P1 - HO", horizontalOffset);
-                SmartDashboard.putNumber("P1 - VO", verticalOffset);
-            }
-        }
+        SmartDashboard.putNumber("Horizontal Offset", horizontalOffset);
+        SmartDashboard.putNumber("Vertical Offset", verticalOffset);
 
-        // IF the previously mentioned code doesn't work with delaying, try this
-        // Switches pipelines back and forth after each periodic call
-        // table.getEntry("pipeline").setNumber(currentPipeline);
-
-        // NetworkTableEntry tx = table.getEntry("tx");
-        // NetworkTableEntry ty = table.getEntry("ty");
-
-        // double horizontalOffset = tx.getDouble(0);
-        // double verticalOffset = ty.getDouble(0);
-
-        // SmartDashboard.putNumber(currentPipeline + "-HO", horizontalOffset);
-        // SmartDashboard.putNumber(currentPipeline + "-VO", verticalOffset);
-
-        // // Switch to next pipeline for next time periodic() is called
-        // currentPipeline = (currentPipeline + 1) % 2;
+        alignWithAprilTag();
     }
 }
 
